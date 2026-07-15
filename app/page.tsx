@@ -9,6 +9,7 @@ import { paintings } from '@/lib/paintings-data'
 import { ArrowRight, Sparkles, Heart, Palette } from 'lucide-react'
 
 export default function Home() {
+  
   const featuredPaintings = paintings.slice(0, 6)
   const testimonials = [
     {

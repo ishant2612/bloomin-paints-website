@@ -21,7 +21,7 @@ export const auth = betterAuth({
   },
   baseURL,
   basePath: '/api/auth',
-  secret: process.env.BETTER_AUTH_SECRET || 'a9cfeb0418af477b251bfa4bd2c6783844217a60dc9398f9695c95424b37dd3d',
+  secret: process.env.BETTER_AUTH_SECRET,
   trustedOrigins: [
     baseURL,
     ...(process.env.VERCEL_PROJECT_PRODUCTION_URL
