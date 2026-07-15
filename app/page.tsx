@@ -2,9 +2,9 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Navbar } from '@/components/navbar'
-import { Footer } from '@/components/footer'
-import { PaintingCard } from '@/components/painting-card'
+import Navbar from '@/components/navbar'
+import Footer from '@/components/footer'
+import PaintingCard from '@/components/painting-card'
 import { paintings } from '@/lib/paintings-data'
 import { ArrowRight, Sparkles, Heart, Palette } from 'lucide-react'
 

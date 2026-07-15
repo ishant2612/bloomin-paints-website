@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Navbar } from '@/components/navbar'
-import { Footer } from '@/components/footer'
+import Navbar from '@/components/navbar'
+import Footer from '@/components/footer'
 import { Mail, Phone, MapPin, Send, MessageCircle, Clock } from 'lucide-react'
 
 export default function Contact() {

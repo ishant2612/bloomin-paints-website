@@ -3,17 +3,19 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ShoppingBag } from 'lucide-react'
+import { Menu, X, LogOut } from 'lucide-react'
+import { useSession, signOut } from '@/lib/auth-client'
 
-export function Navbar() {
+export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const session = useSession()
 
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/gallery', label: 'Gallery' },
+    { href: '/custom-request', label: 'Custom Request', auth: true },
     { href: '/about', label: 'About' },
     { href: '/contact', label: 'Contact' },
-    { href: '/admin', label: 'Admin' },
   ]
 
   return (
@@ -41,30 +43,59 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-foreground/80 hover:text-primary font-body text-sm font-medium transition-colors relative group"
-              >
-                {link.label}
-                <motion.span
-                  className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all"
-                  layoutId={`underline-${link.href}`}
-                />
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              // Skip auth-required links if not logged in
+              if (link.auth && !session.data?.user) return null
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-foreground/80 hover:text-primary font-body text-sm font-medium transition-colors relative group"
+                >
+                  {link.label}
+                  <motion.span
+                    className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all"
+                    layoutId={`underline-${link.href}`}
+                  />
+                </Link>
+              )
+            })}
           </div>
 
-          {/* Cart Icon */}
+          {/* Auth Section */}
           <div className="flex items-center gap-4">
-            <motion.button
-              className="p-2 hover:bg-secondary rounded-lg transition-colors"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <ShoppingBag className="w-5 h-5 text-foreground" />
-            </motion.button>
+            {session.data?.user ? (
+              <>
+                <Link
+                  href="/account"
+                  className="hidden sm:block text-foreground/80 hover:text-primary font-body text-sm font-medium transition-colors"
+                >
+                  My Account
+                </Link>
+                <button
+                  onClick={() => signOut()}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-destructive/10 hover:bg-destructive/20 text-destructive rounded-lg transition-colors"
+                >
+                  <LogOut size={16} />
+                  <span className="hidden sm:inline">Sign Out</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/sign-in"
+                  className="text-foreground/80 hover:text-primary font-body text-sm font-medium transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className="px-4 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
 
             {/* Mobile Menu Button */}
             <motion.button
@@ -93,16 +124,57 @@ export function Navbar() {
               className="md:hidden border-t border-border"
             >
               <div className="py-4 space-y-2">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setIsOpen(false)}
-                    className="block px-4 py-2 text-foreground/80 hover:text-primary hover:bg-secondary rounded-lg transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+                {navLinks.map((link) => {
+                  if (link.auth && !session.data?.user) return null
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setIsOpen(false)}
+                      className="block px-4 py-2 text-foreground/80 hover:text-primary hover:bg-secondary rounded-lg transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  )
+                })}
+                {session.data?.user && (
+                  <>
+                    <Link
+                      href="/account"
+                      onClick={() => setIsOpen(false)}
+                      className="block px-4 py-2 text-foreground/80 hover:text-primary hover:bg-secondary rounded-lg transition-colors"
+                    >
+                      My Account
+                    </Link>
+                    <button
+                      onClick={() => {
+                        signOut()
+                        setIsOpen(false)
+                      }}
+                      className="w-full text-left px-4 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                )}
+                {!session.data?.user && (
+                  <div className="px-4 py-2 space-y-2 border-t border-border mt-2 pt-4">
+                    <Link
+                      href="/sign-in"
+                      onClick={() => setIsOpen(false)}
+                      className="block px-4 py-2 text-center text-foreground/80 hover:text-primary hover:bg-secondary rounded-lg transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/sign-up"
+                      onClick={() => setIsOpen(false)}
+                      className="block px-4 py-2 text-center bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
