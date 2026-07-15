@@ -50,39 +50,39 @@
 :root {
   color-scheme: light;
   
-  /* Premium Bloomin Paints Color Palette */
+  /* Premium Bloomin Paints Color Palette - Light Fuchsia Pink Focus */
   --background: #faf9f7;
   --foreground: #2c2c2c;
   --card: #ffffff;
   --card-foreground: #2c2c2c;
   --popover: #ffffff;
   --popover-foreground: #2c2c2c;
-  --primary: #d4a574;
+  --primary: #e9439c;
   --primary-foreground: #ffffff;
-  --secondary: #f0ebe4;
+  --secondary: #f8e5f2;
   --secondary-foreground: #2c2c2c;
-  --muted: #e8e4df;
+  --muted: #ede6ec;
   --muted-foreground: #7a7a7a;
-  --accent: #c9b5a0;
+  --accent: #ff80cc;
   --accent-foreground: #ffffff;
   --destructive: #dc2626;
-  --border: #e8e4df;
-  --input: #f5f3f0;
-  --ring: #d4a574;
-  --chart-1: #d4a574;
-  --chart-2: #c9b5a0;
-  --chart-3: #e8e4df;
-  --chart-4: #f0ebe4;
+  --border: #ede6ec;
+  --input: #faf6f9;
+  --ring: #e9439c;
+  --chart-1: #e9439c;
+  --chart-2: #ff80cc;
+  --chart-3: #f8c5e0;
+  --chart-4: #f8e5f2;
   --chart-5: #faf9f7;
   --radius: 0.875rem;
   --sidebar: #ffffff;
   --sidebar-foreground: #2c2c2c;
-  --sidebar-primary: #d4a574;
+  --sidebar-primary: #e9439c;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0ebe4;
+  --sidebar-accent: #f8e5f2;
   --sidebar-accent-foreground: #2c2c2c;
-  --sidebar-border: #e8e4df;
-  --sidebar-ring: #d4a574;
+  --sidebar-border: #ede6ec;
+  --sidebar-ring: #e9439c;
 }
 
 @layer base {
