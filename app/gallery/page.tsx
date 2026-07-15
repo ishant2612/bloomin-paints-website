@@ -2,16 +2,16 @@
 
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import Navbar from '@/components/navbar'
-import Footer from '@/components/footer'
-import PaintingCard from '@/components/painting-card'
+import { Navbar } from '@/components/navbar'
+import { Footer } from '@/components/footer'
+import { PaintingCard } from '@/components/painting-card'
 import { paintings, PaintingCategory } from '@/lib/paintings-data'
 import { Search, Grid, Zap } from 'lucide-react'
 
 export default function Gallery() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategories, setSelectedCategories] = useState<PaintingCategory[]>([])
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000])
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1500])
 
   const categories: PaintingCategory[] = [
     'Landscape',

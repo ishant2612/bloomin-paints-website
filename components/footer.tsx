@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { BookHeart, Mail, Send, MessageSquareShare } from 'lucide-react'
 
-export default function Footer() {
+export function Footer() {
   const currentYear = new Date().getFullYear()
 
   const socialLinks = [

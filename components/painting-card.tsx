@@ -3,14 +3,14 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Painting, formatPrice } from '@/lib/paintings-data'
+import { Painting } from '@/lib/paintings-data'
 import { Eye } from 'lucide-react'
 
 interface PaintingCardProps {
   painting: Painting
 }
 
-export default function PaintingCard({ painting }: PaintingCardProps) {
+export function PaintingCard({ painting }: PaintingCardProps) {
   return (
     <motion.div
       className="group h-full"
@@ -92,7 +92,7 @@ export default function PaintingCard({ painting }: PaintingCardProps) {
               whileHover={{ color: '#d4a574' }}
             >
               <span className="font-heading text-2xl font-semibold text-primary">
-                {formatPrice(painting.price)}
+                ${painting.price}
               </span>
               <motion.button
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-accent transition-colors"
