@@ -229,3 +229,26 @@ export async function getOrderReview(orderId: string) {
 export async function getPaintingReviews(paintingId: string) {
   return db.select().from(review).where(eq(review.paintingId, paintingId))
 }
+
+export async function getReviewsForApproval() {
+  const role = await getUserRole()
+  if (role !== 'admin') throw new Error('Only admins can view reviews')
+
+  return db.select().from(review).orderBy(desc(review.createdAt))
+}
+
+export async function approveReview(reviewId: string) {
+  const role = await getUserRole()
+  if (role !== 'admin') throw new Error('Only admins can approve reviews')
+
+  await db.update(review).set({ status: 'approved' }).where(eq(review.id, reviewId))
+  revalidatePath('/')
+}
+
+export async function rejectReview(reviewId: string) {
+  const role = await getUserRole()
+  if (role !== 'admin') throw new Error('Only admins can reject reviews')
+
+  await db.delete(review).where(eq(review.id, reviewId))
+  revalidatePath('/')
+}

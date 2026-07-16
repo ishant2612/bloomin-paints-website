@@ -49,12 +49,13 @@ export default function AccountPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
+        setLoading(true)
         const [ordersData, requestsData] = await Promise.all([
           getUserOrders(),
           getUserCustomRequests(),
         ])
-        setOrders(ordersData)
-        setRequests(requestsData)
+        setOrders(ordersData as OrderItem[])
+        setRequests(requestsData as CustomRequestItem[])
       } catch (error) {
         console.error('Failed to load data:', error)
       } finally {
@@ -62,10 +63,10 @@ export default function AccountPage() {
       }
     }
 
-    if (session.data?.user) {
+    if (session.data?.user && !session.isPending) {
       loadData()
     }
-  }, [session.data?.user])
+  }, [session.data?.user, session.isPending])
 
   const handleCancelOrder = async (orderId: string) => {
     setCanceling(orderId)

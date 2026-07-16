@@ -48,8 +48,14 @@ export default function AuthForm({ mode }: AuthFormProps) {
             password,
           },
           {
-            onSuccess: () => {
-              router.push('/')
+            onSuccess: async (ctx) => {
+              // Check if user is admin
+              const userRole = (ctx.user as any)?.role || 'buyer'
+              if (userRole === 'admin') {
+                router.push('/admin')
+              } else {
+                router.push('/')
+              }
               router.refresh()
             },
             onError: (ctx) => {
@@ -140,14 +146,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
           </>
         )}
       </div>
-
-      {mode === 'sign-in' && (
-        <div className="mt-6 p-4 bg-secondary rounded-lg text-sm text-muted-foreground">
-          <p className="font-semibold text-foreground mb-2">Demo Credentials:</p>
-          <p>Email: demo@example.com</p>
-          <p>Password: password123</p>
-        </div>
-      )}
     </motion.form>
   )
 }
