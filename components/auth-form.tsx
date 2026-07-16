@@ -75,8 +75,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
           },
           {
             onSuccess: async () => {
-              // Redirect to home by default
-              // Admin redirection will be checked on admin page
+              // After successful login, get the user role from session
+              // For now, redirect to home - the session will have the role
+              console.log('[v0] Sign-in successful')
               router.push('/')
               router.refresh()
             },

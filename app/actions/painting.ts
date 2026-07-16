@@ -263,15 +263,18 @@ export async function createOrder(data: {
   state: string
   pincode: string
   totalPrice: number
-  orderId: string
 }) {
   const session = await auth.api.getSession({ headers: await headers() })
   if (!session?.user) throw new Error('Unauthorized')
 
   const userId = session.user.id
 
-  // Create order in database
+  // Create order in database with generated ID
   const newOrderId = uuidv4()
+  const orderId = `ORD-${newOrderId.split('-')[0].toUpperCase()}-${Date.now()}`
+  
+  console.log('[v0] Creating order with ID:', orderId)
+  
   await db.insert(order).values({
     id: newOrderId,
     userId,
@@ -287,11 +290,13 @@ export async function createOrder(data: {
     status: 'pending',
   })
 
+  console.log('[v0] Order inserted into database')
+
   // Send confirmation email (non-blocking)
   try {
     const { sendOrderConfirmationEmail } = await import('@/lib/email')
     await sendOrderConfirmationEmail({
-      orderId: data.orderId,
+      orderId,
       customerName: data.fullName,
       customerEmail: data.email,
       paintingTitle: data.paintingId ? 'Your Artwork' : 'Custom Artwork',
@@ -301,13 +306,14 @@ export async function createOrder(data: {
       state: data.state,
       pincode: data.pincode,
     })
+    console.log('[v0] Confirmation email sent to:', data.email)
   } catch (emailError) {
     console.error('[v0] Email sending failed:', emailError)
     // Don't throw - order is already created
   }
 
   revalidatePath('/account')
-  return { orderId: newOrderId }
+  return { orderId, internalId: newOrderId }
 }
 
 // User Management for Admin

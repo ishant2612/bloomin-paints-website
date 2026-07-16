@@ -9,7 +9,6 @@ import Footer from '@/components/footer'
 import { paintings } from '@/lib/paintings-data'
 import { ChevronRight, Package } from 'lucide-react'
 import { createOrder } from '@/app/actions/painting'
-import crypto from 'crypto'
 
 export default function Checkout() {
   const params = useParams()
@@ -63,13 +62,9 @@ export default function Checkout() {
 
   const handleConfirmOrder = async () => {
     try {
-      // Generate unique order ID
-      const orderId = `ORD-${crypto.randomUUID().split('-')[0].toUpperCase()}-${Date.now()}`
+      console.log('[v0] Creating order with form data:', formData)
       
-      console.log('[v0] Creating order with ID:', orderId)
-      console.log('[v0] Form data:', formData)
-      
-      // Create order in database
+      // Create order in database (server will generate order ID)
       const result = await createOrder({
         paintingId: id,
         fullName: formData.fullName,
@@ -80,7 +75,6 @@ export default function Checkout() {
         state: formData.state,
         pincode: formData.pincode,
         totalPrice: painting.price,
-        orderId,
       })
       
       console.log('[v0] Order created successfully:', result)
@@ -91,7 +85,6 @@ export default function Checkout() {
     } catch (error: any) {
       console.error('[v0] Order creation failed:', error)
       console.error('[v0] Error message:', error?.message)
-      console.error('[v0] Error details:', JSON.stringify(error, null, 2))
       alert(`Failed to create order: ${error?.message || 'Unknown error'}`)
     }
   }

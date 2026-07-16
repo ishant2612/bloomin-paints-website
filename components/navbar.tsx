@@ -66,6 +66,14 @@ export default function Navbar() {
           <div className="flex items-center gap-4">
             {session.data?.user ? (
               <>
+                {(session.data?.user as any)?.role === 'admin' && (
+                  <Link
+                    href="/admin"
+                    className="hidden sm:block px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-lg font-medium transition-colors"
+                  >
+                    Admin Panel
+                  </Link>
+                )}
                 <Link
                   href="/account"
                   className="hidden sm:block text-foreground/80 hover:text-primary font-body text-sm font-medium transition-colors"
@@ -139,6 +147,15 @@ export default function Navbar() {
                 })}
                 {session.data?.user && (
                   <>
+                    {(session.data?.user as any)?.role === 'admin' && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setIsOpen(false)}
+                        className="block px-4 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg font-medium transition-colors"
+                      >
+                        Admin Panel
+                      </Link>
+                    )}
                     <Link
                       href="/account"
                       onClick={() => setIsOpen(false)}
