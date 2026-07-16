@@ -34,10 +34,29 @@ export default function AuthForm({ mode }: AuthFormProps) {
               name,
             },
             {
-              onSuccess: () => {
-                // For demo purposes, default to buyer role
-                // Admin can be set from database manually
-                router.push('/')
+              onSuccess: async () => {
+                // Update user role if not buyer
+                if (role !== 'buyer') {
+                  try {
+                    const response = await fetch('/api/user/update-role', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ role }),
+                    })
+                    if (!response.ok) {
+                      console.warn('[v0] Failed to set role:', await response.text())
+                    }
+                  } catch (roleError) {
+                    console.error('[v0] Role update error:', roleError)
+                  }
+                }
+                
+                // Redirect admin to admin dashboard, buyers to home
+                if (role === 'admin') {
+                  router.push('/admin')
+                } else {
+                  router.push('/')
+                }
                 router.refresh()
               },
               onError: (ctx) => {

@@ -66,8 +66,11 @@ export default function Checkout() {
       // Generate unique order ID
       const orderId = `ORD-${crypto.randomUUID().split('-')[0].toUpperCase()}-${Date.now()}`
       
+      console.log('[v0] Creating order with ID:', orderId)
+      console.log('[v0] Form data:', formData)
+      
       // Create order in database
-      await createOrder({
+      const result = await createOrder({
         paintingId: id,
         fullName: formData.fullName,
         email: formData.email,
@@ -80,12 +83,16 @@ export default function Checkout() {
         orderId,
       })
       
+      console.log('[v0] Order created successfully:', result)
+      
       // Simulate processing delay
       await new Promise((resolve) => setTimeout(resolve, 1500))
       setStep('success')
-    } catch (error) {
+    } catch (error: any) {
       console.error('[v0] Order creation failed:', error)
-      alert('Failed to create order. Please try again.')
+      console.error('[v0] Error message:', error?.message)
+      console.error('[v0] Error details:', JSON.stringify(error, null, 2))
+      alert(`Failed to create order: ${error?.message || 'Unknown error'}`)
     }
   }
 

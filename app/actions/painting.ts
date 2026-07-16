@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { painting, customRequest, order, review } from '@/lib/db/schema'
+import { painting, customRequest, order, review, user } from '@/lib/db/schema'
 import { eq, and, desc } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
@@ -308,4 +308,25 @@ export async function createOrder(data: {
 
   revalidatePath('/account')
   return { orderId: newOrderId }
+}
+
+// User Management for Admin
+export async function getAllUsers() {
+  const role = await getUserRole()
+  if (role !== 'admin') throw new Error('Only admins can view users')
+
+  return db.select().from(user).orderBy(desc(user.createdAt))
+}
+
+export async function updateUserRole(userId: string, newRole: 'buyer' | 'admin') {
+  const role = await getUserRole()
+  if (role !== 'admin') throw new Error('Only admins can update user roles')
+
+  if (!['buyer', 'admin'].includes(newRole)) {
+    throw new Error('Invalid role')
+  }
+
+  await db.update(user).set({ role: newRole }).where(eq(user.id, userId))
+  revalidatePath('/admin')
+  revalidatePath('/account')
 }

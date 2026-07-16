@@ -14,11 +14,13 @@ import {
   getReviewsForApproval,
   approveReview,
   rejectReview,
+  getAllUsers,
+  updateUserRole,
 } from '@/app/actions/painting'
 import { formatPrice } from '@/lib/paintings-data'
 import { BarChart3, Package, RefreshCw, CheckCircle, Clock, Trash2, Edit, Plus, Eye, EyeOff, DollarSign, TrendingUp } from 'lucide-react'
 
-type Tab = 'overview' | 'orders' | 'requests' | 'paintings' | 'reviews'
+type Tab = 'overview' | 'orders' | 'requests' | 'paintings' | 'reviews' | 'users'
 
 interface Order {
   id: string
@@ -54,12 +56,21 @@ interface Review {
   authorName: string
 }
 
+interface User {
+  id: string
+  name: string | null
+  email: string
+  role: string
+  createdAt: Date
+}
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [orders, setOrders] = useState<Order[]>([])
   const [requests, setRequests] = useState<CustomRequest[]>([])
   const [paintings, setPaintings] = useState<Painting[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [totalRevenue, setTotalRevenue] = useState(0)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
@@ -71,17 +82,19 @@ export default function AdminDashboard() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [ordersData, requestsData, paintingsData, reviewsData] = await Promise.all([
+      const [ordersData, requestsData, paintingsData, reviewsData, usersData] = await Promise.all([
         getAllOrders(),
         getAllCustomRequests(),
         getPaintings(),
         getReviewsForApproval(),
+        getAllUsers(),
       ])
       
       setOrders(ordersData as Order[])
       setRequests(requestsData as CustomRequest[])
       setPaintings(paintingsData as Painting[])
       setReviews(reviewsData as Review[])
+      setUsers(usersData as User[])
       
       // Calculate total revenue from delivered orders
       const revenue = ordersData
@@ -89,7 +102,7 @@ export default function AdminDashboard() {
         .reduce((sum: number, o: any) => sum + o.totalPrice, 0)
       setTotalRevenue(revenue)
     } catch (error) {
-      console.error('Failed to load admin data:', error)
+      console.error('[v0] Failed to load admin data:', error)
     } finally {
       setLoading(false)
     }
@@ -139,6 +152,20 @@ export default function AdminDashboard() {
       setReviews(reviews.filter((r) => r.id !== reviewId))
     } catch (error) {
       console.error('Failed to reject review:', error)
+    } finally {
+      setUpdatingId(null)
+    }
+  }
+
+  const handleUserRoleChange = async (userId: string, newRole: 'buyer' | 'admin') => {
+    setUpdatingId(userId)
+    try {
+      await updateUserRole(userId, newRole)
+      setUsers(users.map((u) => (u.id === userId ? { ...u, role: newRole } : u)))
+      console.log('[v0] User role updated successfully')
+    } catch (error) {
+      console.error('[v0] Failed to update user role:', error)
+      alert('Failed to update user role')
     } finally {
       setUpdatingId(null)
     }
@@ -214,7 +241,7 @@ export default function AdminDashboard() {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-8 border-b border-border overflow-x-auto">
-        {(['overview', 'orders', 'requests', 'paintings', 'reviews'] as Tab[]).map((tab) => (
+        {(['overview', 'orders', 'requests', 'paintings', 'reviews', 'users'] as Tab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -505,6 +532,61 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+        </motion.div>
+      )}
+
+      {/* Users Tab */}
+      {activeTab === 'users' && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          <h2 className="text-2xl font-bold text-foreground mb-4">User Management</h2>
+          {users.length === 0 ? (
+            <div className="bg-secondary rounded-xl p-8 text-center text-muted-foreground">
+              No users found
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-border">
+                    <th className="text-left py-3 px-4 font-semibold text-foreground">Name</th>
+                    <th className="text-left py-3 px-4 font-semibold text-foreground">Email</th>
+                    <th className="text-left py-3 px-4 font-semibold text-foreground">Role</th>
+                    <th className="text-left py-3 px-4 font-semibold text-foreground">Joined</th>
+                    <th className="text-left py-3 px-4 font-semibold text-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((u) => (
+                    <tr key={u.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
+                      <td className="py-3 px-4 text-foreground">{u.name || 'N/A'}</td>
+                      <td className="py-3 px-4 text-muted-foreground">{u.email}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                          u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {u.role === 'admin' ? '👑 Admin' : '👤 Buyer'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-muted-foreground text-sm">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="py-3 px-4">
+                        <select
+                          disabled={updatingId === u.id}
+                          onChange={(e) => handleUserRoleChange(u.id, e.target.value as 'buyer' | 'admin')}
+                          value={u.role}
+                          className="px-3 py-1 bg-secondary text-foreground rounded-lg border border-border cursor-pointer hover:bg-secondary/80 transition-colors text-sm"
+                        >
+                          <option value="buyer">Make Buyer</option>
+                          <option value="admin">Make Admin</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </motion.div>
       )}
     </div>
