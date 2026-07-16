@@ -8,6 +8,7 @@ import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
 import { paintings } from '@/lib/paintings-data'
 import { ChevronRight, Package } from 'lucide-react'
+import { createOrder } from '@/app/actions/painting'
 
 export default function Checkout() {
   const params = useParams()
@@ -60,9 +61,32 @@ export default function Checkout() {
   }
 
   const handleConfirmOrder = async () => {
-    // Simulate order processing
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setStep('success')
+    try {
+      console.log('[v0] Creating order with form data:', formData)
+      
+      // Create order in database (server will generate order ID)
+      const result = await createOrder({
+        paintingId: id,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
+        totalPrice: painting.price,
+      })
+      
+      console.log('[v0] Order created successfully:', result)
+      
+      // Simulate processing delay
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      setStep('success')
+    } catch (error: any) {
+      console.error('[v0] Order creation failed:', error)
+      console.error('[v0] Error message:', error?.message)
+      alert(`Failed to create order: ${error?.message || 'Unknown error'}`)
+    }
   }
 
   const containerVariants = {

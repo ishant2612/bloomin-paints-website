@@ -117,6 +117,8 @@ export const review = pgTable('review', {
   paintingId: text('paintingId').references(() => painting.id),
   rating: integer('rating').notNull(), // 1-5
   comment: text('comment'),
+  status: text('status').notNull().default('pending'), // pending, approved
+  authorName: text('authorName').notNull().default('Anonymous'),
   createdAt: timestamp('createdAt').notNull().default(new Date()),
   updatedAt: timestamp('updatedAt').notNull().default(new Date()),
 })

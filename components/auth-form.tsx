@@ -14,6 +14,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [role, setRole] = useState<'buyer' | 'admin'>('buyer')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -25,22 +26,47 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (mode === 'sign-up') {
-        await signUp.email(
-          {
-            email,
-            password,
-            name,
-          },
-          {
-            onSuccess: () => {
-              router.push('/')
-              router.refresh()
+        try {
+          await signUp.email(
+            {
+              email,
+              password,
+              name,
             },
-            onError: (ctx) => {
-              setError(ctx.error.message || 'Failed to sign up')
-            },
-          }
-        )
+            {
+              onSuccess: async () => {
+                // Update user role if not buyer
+                if (role !== 'buyer') {
+                  try {
+                    const response = await fetch('/api/user/update-role', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ role }),
+                    })
+                    if (!response.ok) {
+                      console.warn('[v0] Failed to set role:', await response.text())
+                    }
+                  } catch (roleError) {
+                    console.error('[v0] Role update error:', roleError)
+                  }
+                }
+                
+                // Redirect admin to admin dashboard, buyers to home
+                if (role === 'admin') {
+                  router.push('/admin')
+                } else {
+                  router.push('/')
+                }
+                router.refresh()
+              },
+              onError: (ctx) => {
+                setError(ctx.error.message || 'Failed to sign up')
+              },
+            }
+          )
+        } catch (err) {
+          setError('Failed to sign up. Please try again.')
+        }
       } else {
         await signIn.email(
           {
@@ -48,8 +74,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
             password,
           },
           {
-            onSuccess: () => {
-              router.push('/')
+            onSuccess: async () => {
+              // Redirect to post-login page which checks role and redirects appropriately
+              console.log('[v0] Sign-in successful, redirecting to post-login check')
+              router.push('/post-login')
               router.refresh()
             },
             onError: (ctx) => {
@@ -66,20 +94,40 @@ export default function AuthForm({ mode }: AuthFormProps) {
   return (
     <motion.form onSubmit={handleSubmit} className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       {mode === 'sign-up' && (
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
-            Full Name
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter your name"
-            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input"
-            required
-          />
-        </div>
+        <>
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
+              Full Name
+            </label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your name"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="role" className="block text-sm font-medium text-foreground mb-1">
+              Account Type (Demo)
+            </label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as 'buyer' | 'admin')}
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input"
+            >
+              <option value="buyer">Buyer - Purchase Paintings</option>
+              <option value="admin">Admin - Manage Store (Set role in DB after signup)</option>
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Note: For demo, manually set your role to 'admin' in the database after signing up, then refresh.
+            </p>
+          </div>
+        </>
       )}
 
       <div>
@@ -140,14 +188,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
           </>
         )}
       </div>
-
-      {mode === 'sign-in' && (
-        <div className="mt-6 p-4 bg-secondary rounded-lg text-sm text-muted-foreground">
-          <p className="font-semibold text-foreground mb-2">Demo Credentials:</p>
-          <p>Email: demo@example.com</p>
-          <p>Password: password123</p>
-        </div>
-      )}
     </motion.form>
   )
 }

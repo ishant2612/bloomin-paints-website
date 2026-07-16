@@ -133,12 +133,12 @@ export default function Gallery() {
                 <div className="space-y-3">
                   <div>
                     <label className="text-sm text-foreground/70">
-                      Min: ${priceRange[0]}
+                      Min: ₹{priceRange[0].toLocaleString('en-IN')}
                     </label>
                     <input
                       type="range"
                       min="0"
-                      max="1500"
+                      max="50000"
                       value={priceRange[0]}
                       onChange={(e) =>
                         setPriceRange([Number(e.target.value), priceRange[1]])
@@ -148,12 +148,12 @@ export default function Gallery() {
                   </div>
                   <div>
                     <label className="text-sm text-foreground/70">
-                      Max: ${priceRange[1]}
+                      Max: ₹{priceRange[1].toLocaleString('en-IN')}
                     </label>
                     <input
                       type="range"
                       min="0"
-                      max="1500"
+                      max="50000"
                       value={priceRange[1]}
                       onChange={(e) =>
                         setPriceRange([priceRange[0], Number(e.target.value)])
@@ -162,6 +162,16 @@ export default function Gallery() {
                     />
                   </div>
                 </div>
+                <button
+                  onClick={() => {
+                    setSearchTerm('')
+                    setSelectedCategories([])
+                    setPriceRange([0, 50000])
+                  }}
+                  className="w-full mt-4 px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-lg transition-colors text-sm font-medium"
+                >
+                  Clear Filters
+                </button>
               </div>
 
               {/* Clear Filters */}
