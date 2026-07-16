@@ -14,9 +14,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
-  const [role, setRole] = useState<'buyer' | 'admin'>('buyer')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,47 +26,22 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (mode === 'sign-up') {
-        try {
-          await signUp.email(
-            {
-              email,
-              password,
-              name,
+        await signUp.email(
+          {
+            email,
+            password,
+            name,
+          },
+          {
+            onSuccess: async () => {
+              router.push('/')
+              router.refresh()
             },
-            {
-              onSuccess: async () => {
-                // Update user role if not buyer
-                if (role !== 'buyer') {
-                  try {
-                    const response = await fetch('/api/user/update-role', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ role }),
-                    })
-                    if (!response.ok) {
-                      console.warn('[v0] Failed to set role:', await response.text())
-                    }
-                  } catch (roleError) {
-                    console.error('[v0] Role update error:', roleError)
-                  }
-                }
-                
-                // Redirect admin to admin dashboard, buyers to home
-                if (role === 'admin') {
-                  router.push('/admin')
-                } else {
-                  router.push('/')
-                }
-                router.refresh()
-              },
-              onError: (ctx) => {
-                setError(ctx.error.message || 'Failed to sign up')
-              },
-            }
-          )
-        } catch (err) {
-          setError('Failed to sign up. Please try again.')
-        }
+            onError: (ctx) => {
+              setError(ctx.error.message || 'Failed to sign up')
+            },
+          }
+        )
       } else {
         await signIn.email(
           {
@@ -75,7 +50,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
           },
           {
             onSuccess: async () => {
-              // Redirect to post-login page which checks role and redirects appropriately
               console.log('[v0] Sign-in successful, redirecting to post-login check')
               router.push('/post-login')
               router.refresh()
@@ -86,52 +60,49 @@ export default function AuthForm({ mode }: AuthFormProps) {
           }
         )
       }
+    } catch {
+      setError(
+        mode === 'sign-up'
+          ? 'Failed to sign up. Please try again.'
+          : 'Failed to sign in. Please try again.'
+      )
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <motion.form onSubmit={handleSubmit} className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.form
+      onSubmit={handleSubmit}
+      className="space-y-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
       {mode === 'sign-up' && (
-        <>
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
-              Full Name
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your name"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input"
-              required
-            />
-          </div>
-
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium text-foreground mb-1">
-              Account Type (Demo)
-            </label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value as 'buyer' | 'admin')}
-              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input"
-            >
-              <option value="buyer">Buyer - Purchase Paintings</option>
-              <option value="admin">Admin - Manage Store (Set role in DB after signup)</option>
-            </select>
-            <p className="text-xs text-muted-foreground mt-1">
-              Note: For demo, manually set your role to 'admin' in the database after signing up, then refresh.
-            </p>
-          </div>
-        </>
+        <div>
+          <label
+            htmlFor="name"
+            className="block text-sm font-medium text-foreground mb-1"
+          >
+            Full Name
+          </label>
+          <input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter your name"
+            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input"
+            required
+          />
+        </div>
       )}
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-foreground mb-1"
+        >
           Email
         </label>
         <input
@@ -146,7 +117,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1">
+        <label
+          htmlFor="password"
+          className="block text-sm font-medium text-foreground mb-1"
+        >
           Password
         </label>
         <input
@@ -161,7 +135,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
         />
       </div>
 
-      {error && <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">{error}</div>}
+      {error && (
+        <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+          {error}
+        </div>
+      )}
 
       <button
         type="submit"
