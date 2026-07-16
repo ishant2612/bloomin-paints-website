@@ -141,7 +141,7 @@ export async function updateCustomRequestStatus(
 }
 
 // Orders
-export async function createOrder(data: {
+export async function createOrderDb(data: {
   paintingId?: string
   customRequestId?: string
   fullName: string
@@ -251,4 +251,61 @@ export async function rejectReview(reviewId: string) {
 
   await db.delete(review).where(eq(review.id, reviewId))
   revalidatePath('/')
+}
+
+export async function createOrder(data: {
+  paintingId?: string
+  fullName: string
+  email: string
+  phone: string
+  address: string
+  city: string
+  state: string
+  pincode: string
+  totalPrice: number
+  orderId: string
+}) {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) throw new Error('Unauthorized')
+
+  const userId = session.user.id
+
+  // Create order in database
+  const newOrderId = uuidv4()
+  await db.insert(order).values({
+    id: newOrderId,
+    userId,
+    paintingId: data.paintingId,
+    fullName: data.fullName,
+    email: data.email,
+    phone: data.phone,
+    address: data.address,
+    city: data.city,
+    state: data.state,
+    pincode: data.pincode,
+    totalPrice: data.totalPrice,
+    status: 'pending',
+  })
+
+  // Send confirmation email (non-blocking)
+  try {
+    const { sendOrderConfirmationEmail } = await import('@/lib/email')
+    await sendOrderConfirmationEmail({
+      orderId: data.orderId,
+      customerName: data.fullName,
+      customerEmail: data.email,
+      paintingTitle: data.paintingId ? 'Your Artwork' : 'Custom Artwork',
+      price: data.totalPrice,
+      address: data.address,
+      city: data.city,
+      state: data.state,
+      pincode: data.pincode,
+    })
+  } catch (emailError) {
+    console.error('[v0] Email sending failed:', emailError)
+    // Don't throw - order is already created
+  }
+
+  revalidatePath('/account')
+  return { orderId: newOrderId }
 }

@@ -14,6 +14,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [role, setRole] = useState<'buyer' | 'admin'>('buyer')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -25,22 +26,28 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (mode === 'sign-up') {
-        await signUp.email(
-          {
-            email,
-            password,
-            name,
-          },
-          {
-            onSuccess: () => {
-              router.push('/')
-              router.refresh()
+        try {
+          await signUp.email(
+            {
+              email,
+              password,
+              name,
             },
-            onError: (ctx) => {
-              setError(ctx.error.message || 'Failed to sign up')
-            },
-          }
-        )
+            {
+              onSuccess: () => {
+                // For demo purposes, default to buyer role
+                // Admin can be set from database manually
+                router.push('/')
+                router.refresh()
+              },
+              onError: (ctx) => {
+                setError(ctx.error.message || 'Failed to sign up')
+              },
+            }
+          )
+        } catch (err) {
+          setError('Failed to sign up. Please try again.')
+        }
       } else {
         await signIn.email(
           {
@@ -48,14 +55,10 @@ export default function AuthForm({ mode }: AuthFormProps) {
             password,
           },
           {
-            onSuccess: async (ctx) => {
-              // Check if user is admin
-              const userRole = (ctx.user as any)?.role || 'buyer'
-              if (userRole === 'admin') {
-                router.push('/admin')
-              } else {
-                router.push('/')
-              }
+            onSuccess: async () => {
+              // Redirect to home by default
+              // Admin redirection will be checked on admin page
+              router.push('/')
               router.refresh()
             },
             onError: (ctx) => {
@@ -72,20 +75,40 @@ export default function AuthForm({ mode }: AuthFormProps) {
   return (
     <motion.form onSubmit={handleSubmit} className="space-y-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       {mode === 'sign-up' && (
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
-            Full Name
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter your name"
-            className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input"
-            required
-          />
-        </div>
+        <>
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
+              Full Name
+            </label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your name"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="role" className="block text-sm font-medium text-foreground mb-1">
+              Account Type (Demo)
+            </label>
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as 'buyer' | 'admin')}
+              className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-input"
+            >
+              <option value="buyer">Buyer - Purchase Paintings</option>
+              <option value="admin">Admin - Manage Store (Set role in DB after signup)</option>
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Note: For demo, manually set your role to 'admin' in the database after signing up, then refresh.
+            </p>
+          </div>
+        </>
       )}
 
       <div>

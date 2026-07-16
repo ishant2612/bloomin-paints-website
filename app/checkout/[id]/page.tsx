@@ -8,6 +8,8 @@ import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
 import { paintings } from '@/lib/paintings-data'
 import { ChevronRight, Package } from 'lucide-react'
+import { createOrder } from '@/app/actions/painting'
+import crypto from 'crypto'
 
 export default function Checkout() {
   const params = useParams()
@@ -60,9 +62,31 @@ export default function Checkout() {
   }
 
   const handleConfirmOrder = async () => {
-    // Simulate order processing
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setStep('success')
+    try {
+      // Generate unique order ID
+      const orderId = `ORD-${crypto.randomUUID().split('-')[0].toUpperCase()}-${Date.now()}`
+      
+      // Create order in database
+      await createOrder({
+        paintingId: id,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
+        totalPrice: painting.price,
+        orderId,
+      })
+      
+      // Simulate processing delay
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+      setStep('success')
+    } catch (error) {
+      console.error('[v0] Order creation failed:', error)
+      alert('Failed to create order. Please try again.')
+    }
   }
 
   const containerVariants = {
