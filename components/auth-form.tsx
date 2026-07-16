@@ -75,10 +75,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
           },
           {
             onSuccess: async () => {
-              // After successful login, get the user role from session
-              // For now, redirect to home - the session will have the role
-              console.log('[v0] Sign-in successful')
-              router.push('/')
+              // Redirect to post-login page which checks role and redirects appropriately
+              console.log('[v0] Sign-in successful, redirecting to post-login check')
+              router.push('/post-login')
               router.refresh()
             },
             onError: (ctx) => {

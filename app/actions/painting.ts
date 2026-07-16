@@ -264,56 +264,84 @@ export async function createOrder(data: {
   pincode: string
   totalPrice: number
 }) {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session?.user) throw new Error('Unauthorized')
-
-  const userId = session.user.id
-
-  // Create order in database with generated ID
-  const newOrderId = uuidv4()
-  const orderId = `ORD-${newOrderId.split('-')[0].toUpperCase()}-${Date.now()}`
-  
-  console.log('[v0] Creating order with ID:', orderId)
-  
-  await db.insert(order).values({
-    id: newOrderId,
-    userId,
-    paintingId: data.paintingId,
-    fullName: data.fullName,
-    email: data.email,
-    phone: data.phone,
-    address: data.address,
-    city: data.city,
-    state: data.state,
-    pincode: data.pincode,
-    totalPrice: data.totalPrice,
-    status: 'pending',
-  })
-
-  console.log('[v0] Order inserted into database')
-
-  // Send confirmation email (non-blocking)
   try {
-    const { sendOrderConfirmationEmail } = await import('@/lib/email')
-    await sendOrderConfirmationEmail({
-      orderId,
-      customerName: data.fullName,
-      customerEmail: data.email,
-      paintingTitle: data.paintingId ? 'Your Artwork' : 'Custom Artwork',
-      price: data.totalPrice,
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) {
+      console.error('[v0] No session found')
+      throw new Error('Unauthorized')
+    }
+
+    const userId = session.user.id
+    const newOrderId = uuidv4()
+    const orderId = `ORD-${newOrderId.split('-')[0].toUpperCase()}-${Date.now()}`
+    
+    console.log('[v0] Creating order with ID:', orderId)
+    console.log('[v0] User ID:', userId)
+    
+    // Insert order into database
+    const result = await db.insert(order).values({
+      id: newOrderId,
+      userId,
+      paintingId: data.paintingId || null,
+      fullName: data.fullName,
+      email: data.email,
+      phone: data.phone,
       address: data.address,
       city: data.city,
       state: data.state,
       pincode: data.pincode,
+      totalPrice: data.totalPrice,
+      status: 'pending',
     })
-    console.log('[v0] Confirmation email sent to:', data.email)
-  } catch (emailError) {
-    console.error('[v0] Email sending failed:', emailError)
-    // Don't throw - order is already created
-  }
 
-  revalidatePath('/account')
-  return { orderId, internalId: newOrderId }
+    console.log('[v0] Order inserted into database successfully')
+
+    // Send email in background (don't await)
+    try {
+      const { sendOrderConfirmationEmail } = await import('@/lib/email')
+      sendOrderConfirmationEmail({
+        orderId,
+        customerName: data.fullName,
+        customerEmail: data.email,
+        paintingTitle: data.paintingId ? 'Your Artwork' : 'Custom Artwork',
+        price: data.totalPrice,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        pincode: data.pincode,
+      }).catch((err) => {
+        console.error('[v0] Email sending error:', err)
+      })
+    } catch (emailError) {
+      console.error('[v0] Failed to import email module:', emailError)
+    }
+
+    revalidatePath('/account')
+    return { orderId, internalId: newOrderId, success: true }
+  } catch (error: any) {
+    console.error('[v0] Order creation error:', error)
+    throw new Error(error?.message || 'Failed to create order')
+  }
+}
+
+// Get current user's role
+export async function getCurrentUserRole() {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) return null
+    
+    // Fetch user from database to get the role
+    const userId = session.user.id
+    const userData = await db.query.user.findFirst({
+      where: (fields) => eq(fields.id, userId),
+    })
+    
+    console.log('[v0] Current user role from DB:', userData?.role)
+    return userData?.role || 'buyer'
+  } catch (error) {
+    console.error('[v0] Error getting user role:', error)
+    return 'buyer'
+  }
 }
 
 // User Management for Admin

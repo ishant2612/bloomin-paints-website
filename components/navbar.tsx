@@ -1,14 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, LogOut } from 'lucide-react'
 import { useSession, signOut } from '@/lib/auth-client'
+import { getCurrentUserRole } from '@/app/actions/painting'
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const session = useSession()
+
+  useEffect(() => {
+    if (session.data?.user && !session.isPending) {
+      getCurrentUserRole().then((role) => {
+        console.log('[v0] Navbar - fetched user role:', role)
+        setUserRole(role)
+      }).catch(err => {
+        console.error('[v0] Navbar - failed to fetch role:', err)
+        setUserRole('buyer')
+      })
+    }
+  }, [session.data?.user, session.isPending])
 
   const navLinks = [
     { href: '/', label: 'Home' },
@@ -66,7 +80,7 @@ export default function Navbar() {
           <div className="flex items-center gap-4">
             {session.data?.user ? (
               <>
-                {(session.data?.user as any)?.role === 'admin' && (
+                {userRole === 'admin' && (
                   <Link
                     href="/admin"
                     className="hidden sm:block px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-lg font-medium transition-colors"
@@ -147,7 +161,7 @@ export default function Navbar() {
                 })}
                 {session.data?.user && (
                   <>
-                    {(session.data?.user as any)?.role === 'admin' && (
+                    {userRole === 'admin' && (
                       <Link
                         href="/admin"
                         onClick={() => setIsOpen(false)}
