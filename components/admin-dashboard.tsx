@@ -37,6 +37,9 @@ interface Order {
 interface CustomRequest {
   id: string
   title: string
+  description: string
+  specifications: string
+  imageUrl: string
   basePrice: number
   finalPrice: number
   status: string
@@ -104,10 +107,18 @@ export default function AdminDashboard() {
       setUsers(usersData as User[])
       
       // Calculate total revenue from delivered orders
-      const revenue = ordersData
-        .filter((o: any) => o.status === 'delivered')
-        .reduce((sum: number, o: any) => sum + o.totalPrice, 0)
-      setTotalRevenue(revenue)
+      // Revenue from delivered orders
+const orderRevenue = ordersData
+  .filter((o: any) => o.status === 'delivered')
+  .reduce((sum: number, o: any) => sum + o.totalPrice, 0)
+
+// Revenue from completed custom requests
+const customRevenue = requestsData
+  .filter((r: any) => r.status === 'completed')
+  .reduce((sum: number, r: any) => sum + r.finalPrice, 0)
+
+// Total revenue
+setTotalRevenue(orderRevenue + customRevenue)
     } catch (error) {
       console.error('[v0] Failed to load admin data:', error)
     } finally {
@@ -115,19 +126,35 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
-    setUpdatingId(orderId)
-    try {
-      await updateOrderStatus(orderId, newStatus)
-      setOrders(orders.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)))
-      await loadData()
-    } catch (error) {
-      console.error('Failed to update order:', error)
-    } finally {
-      setUpdatingId(null)
-    }
-  }
+  // const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
+  //   setUpdatingId(orderId)
+  //   try {
+  //     await updateOrderStatus(orderId, newStatus)
+  //     setOrders(orders.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)))
+  //     await loadData()
+  //   } catch (error) {
+  //     console.error('Failed to update order:', error)
+  //   } finally {
+  //     setUpdatingId(null)
+  //   }
+  // }
 
+  const handleOrderStatusChange = async (
+  orderId: string,
+  newStatus: string
+) => {
+  setUpdatingId(orderId)
+
+  try {
+    await updateOrderStatus(orderId, newStatus)
+
+    await loadData()
+  } catch (error) {
+    console.error(error)
+  } finally {
+    setUpdatingId(null)
+  }
+}
   const handleRequestStatusChange = async (requestId: string, newStatus: string) => {
     setUpdatingId(requestId)
     try {
@@ -178,12 +205,32 @@ export default function AdminDashboard() {
     }
   }
 
-  const stats = [
-    { label: 'Total Orders', value: orders.length, icon: Package, color: 'bg-blue-100 text-blue-600' },
-    { label: 'Total Revenue', value: `₹${(totalRevenue / 100000).toFixed(1)}L`, icon: DollarSign, color: 'bg-green-100 text-green-600' },
-    { label: 'Pending Requests', value: requests.filter((r) => r.status === 'pending').length, icon: Clock, color: 'bg-orange-100 text-orange-600' },
-    { label: 'Pending Reviews', value: reviews.filter((r) => r.status === 'pending').length, icon: TrendingUp, color: 'bg-purple-100 text-purple-600' },
-  ]
+ const stats = [
+  {
+    label: 'Total Orders',
+    value: orders.length,
+    icon: Package,
+    color: 'bg-blue-100 text-blue-600',
+  },
+  {
+    label: 'Total Revenue',
+    value: `₹${(totalRevenue / 100000).toFixed(1)}L`,
+    icon: DollarSign,
+    color: 'bg-green-100 text-green-600',
+  },
+  {
+    label: 'Pending Requests',
+    value: requests.filter((r) => r.status === 'pending').length,
+    icon: Clock,
+    color: 'bg-orange-100 text-orange-600',
+  },
+  {
+    label: 'Pending Reviews',
+    value: reviews.filter((r) => r.status === 'pending').length,
+    icon: TrendingUp,
+    color: 'bg-purple-100 text-purple-600',
+  },
+]
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -203,6 +250,23 @@ export default function AdminDashboard() {
         return 'bg-gray-100 text-gray-700'
     }
   }
+  const orderStatuses = [
+  'pending',
+  'confirmed',
+  'paid',
+  'shipped',
+  'delivered',
+  'cancelled',
+]
+
+const orderStatusCounts = orderStatuses.map((status) => ({
+  status,
+  count: orders.filter((o) => o.status === status).length,
+  percentage:
+    orders.length === 0
+      ? 0
+      : (orders.filter((o) => o.status === status).length / orders.length) * 100,
+}))
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-16 md:py-24">
@@ -320,34 +384,107 @@ export default function AdminDashboard() {
           ) : (
             <div className="space-y-3">
               {requests.map((req) => (
-                <div key={req.id} className="bg-white rounded-xl p-6 border border-border hover:shadow-lg transition-shadow">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="font-semibold text-foreground">{req.title}</h3>
-                      <p className="text-sm text-muted-foreground">Base: ₹{req.basePrice.toLocaleString('en-IN')} → Final: ₹{req.finalPrice.toLocaleString('en-IN')}</p>
-                    </div>
-                    <div className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${getStatusColor(req.status)}`}>
-                      {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                    </div>
-                  </div>
+                <div
+  key={req.id}
+  className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-lg transition-shadow"
+>
+  <div className="grid md:grid-cols-[320px_1fr]">
+    {/* Image */}
+    <div className="relative">
+      <img
+        src={req.imageUrl}
+        alt={req.title}
+        className="w-full h-full min-h-[320px] object-cover"
+      />
 
-                  <div className="flex gap-2 flex-wrap">
-                    {['pending', 'accepted', 'rejected', 'completed'].map((status) => (
-                      <button
-                        key={status}
-                        onClick={() => handleRequestStatusChange(req.id, status)}
-                        disabled={updatingId === req.id}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                          req.status === status
-                            ? `${getStatusColor(status)} cursor-default`
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 cursor-pointer'
-                        } disabled:opacity-50`}
-                      >
-                        {status.charAt(0).toUpperCase() + status.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+      <div className="absolute top-3 right-3">
+        <span
+          className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(
+            req.status
+          )}`}
+        >
+          {req.status}
+        </span>
+      </div>
+    </div>
+
+    {/* Details */}
+    <div className="p-6 flex flex-col justify-between">
+
+      <div>
+
+        <h3 className="text-2xl font-bold text-foreground">
+          {req.title}
+        </h3>
+
+        <div className="mt-6">
+          <h4 className="font-semibold mb-2">
+            Description
+          </h4>
+
+          <p className="text-muted-foreground whitespace-pre-line">
+            {req.description}
+          </p>
+        </div>
+
+        {req.specifications && (
+          <div className="mt-5">
+            <h4 className="font-semibold mb-2">
+              Specifications
+            </h4>
+
+            <p className="text-muted-foreground whitespace-pre-line">
+              {req.specifications}
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4 mt-8">
+
+          <div className="bg-secondary rounded-lg p-4">
+            <p className="text-sm text-muted-foreground">
+              Base Price
+            </p>
+
+            <p className="text-xl font-bold">
+              ₹{req.basePrice.toLocaleString('en-IN')}
+            </p>
+          </div>
+
+          <div className="bg-primary/10 rounded-lg p-4">
+            <p className="text-sm text-muted-foreground">
+              Final Price
+            </p>
+
+            <p className="text-xl font-bold text-primary">
+              ₹{req.finalPrice.toLocaleString('en-IN')}
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+      <div className="flex gap-2 flex-wrap mt-8">
+        {['pending', 'accepted', 'rejected', 'completed'].map((status) => (
+          <button
+            key={status}
+            onClick={() => handleRequestStatusChange(req.id, status)}
+            disabled={updatingId === req.id}
+            className={`px-4 py-2 rounded-lg font-medium transition ${
+              req.status === status
+                ? getStatusColor(status)
+                : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          >
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </button>
+        ))}
+      </div>
+
+    </div>
+  </div>
+</div>
               ))}
             </div>
           )}
@@ -551,31 +688,33 @@ export default function AdminDashboard() {
             <div className="bg-white rounded-xl p-8 border border-border">
               <h3 className="text-lg font-semibold text-foreground mb-4">Order Status Distribution</h3>
               <div className="space-y-2">
-                {['pending', 'confirmed', 'paid', 'shipped', 'delivered', 'cancelled'].map((status) => {
-                  const count = orders.filter((o) => o.status === status).length
-                  const percentage = orders.length > 0 ? ((count / orders.length) * 100).toFixed(0) : 0
-                  return (
-                    <div key={status} className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground capitalize">{status}</span>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 h-2 bg-gray-200 rounded-full">
-                          <div
-                            className={`h-full rounded-full ${
-                              status === 'delivered'
-                                ? 'bg-green-500'
-                                : status === 'cancelled'
-                                  ? 'bg-red-500'
-                                  : 'bg-primary'
-                            }`}
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-semibold w-8">{count}</span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+  {orderStatusCounts.map(({ status, count, percentage }) => (
+    <div key={status} className="flex items-center justify-between">
+      <span className="text-sm text-muted-foreground capitalize">
+        {status}
+      </span>
+
+      <div className="flex items-center gap-2">
+        <div className="w-32 h-2 bg-gray-200 rounded-full">
+          <div
+            className={`h-full rounded-full ${
+              status === 'delivered'
+                ? 'bg-green-500'
+                : status === 'cancelled'
+                ? 'bg-red-500'
+                : 'bg-primary'
+            }`}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+
+        <span className="text-sm font-semibold w-8">
+          {count}
+        </span>
+      </div>
+    </div>
+  ))}
+</div>
             </div>
           </div>
         </motion.div>

@@ -4,34 +4,33 @@ import { useState } from 'react'
 import { createCustomRequest } from '@/app/actions/painting'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import ImageUploader from './admin/ImageUploader'
 
 export default function CustomRequestForm() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [specifications, setSpecifications] = useState('')
   const [basePrice, setBasePrice] = useState('25000')
-  const [imageUrl, setImageUrl] = useState('')
+  // const [imageUrl, setImageUrl] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [preview, setPreview] = useState<string>('')
   const router = useRouter()
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0]
+  if (!file) return
 
-    setImageFile(file)
+  setImageFile(file)
 
-    // Create preview
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const result = event.target?.result as string
-      setPreview(result)
-      setImageUrl(result)
-    }
-    reader.readAsDataURL(file)
+  const reader = new FileReader()
+  reader.onload = (event) => {
+    setPreview(event.target?.result as string)
   }
+
+  reader.readAsDataURL(file)
+}
 
   const finalPrice = Math.round(Number(basePrice) * 1.3)
 
@@ -41,14 +40,26 @@ export default function CustomRequestForm() {
     setLoading(true)
 
     try {
-      if (!title || !description || !basePrice || !imageUrl) {
+      if (!title || !description || !basePrice || !imageFile) {
         throw new Error('Please fill in all required fields')
       }
 
+      const formData = new FormData()
+      formData.append('file', imageFile)
+
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error('Image upload failed')
+      }
+      const { url } = await uploadResponse.json()
       await createCustomRequest({
         title,
         description,
-        imageUrl,
+        imageUrl: url,
         specifications,
         basePrice: Number(basePrice),
       })
@@ -119,27 +130,10 @@ export default function CustomRequestForm() {
       <div>
         <label className="block text-sm font-semibold text-foreground mb-2">Upload Reference Image *</label>
         <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
-            id="image-upload"
-            required
-          />
-          <label htmlFor="image-upload" className="cursor-pointer">
-            {preview ? (
-              <div className="flex flex-col items-center">
-                <img src={preview} alt="Preview" className="max-h-40 rounded-lg mb-3" />
-                <p className="text-sm text-primary font-semibold">Click to change image</p>
-              </div>
-            ) : (
-              <div>
-                <p className="text-lg font-semibold text-foreground mb-1">Click to upload image</p>
-                <p className="text-sm text-muted-foreground">or drag and drop your reference photo</p>
-              </div>
-            )}
-          </label>
+          <ImageUploader
+  value={imageFile}
+  onChange={setImageFile}
+/>
         </div>
       </div>
 
