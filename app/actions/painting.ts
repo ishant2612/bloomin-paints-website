@@ -49,7 +49,7 @@ export async function addPainting(data: {
   await db.insert(painting).values({
     id,
     ...data,
-    availability: 'available',
+    availability: 'Available',
   })
   revalidatePath('/gallery')
   return id
@@ -348,7 +348,7 @@ export async function getCurrentUserRole() {
 export async function getAllUsers() {
   const role = await getUserRole()
   if (role !== 'admin') throw new Error('Only admins can view users')
-
+  console.log('[v0] Fetching all users for admin')
   return db.select().from(user).orderBy(desc(user.createdAt))
 }
 

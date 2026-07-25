@@ -135,6 +135,7 @@ export default function PaintingDetails() {
                     : 'bg-red-100 text-red-700'
                 }`}
               >
+                
                 {painting.availability}
               </div>
             </div>

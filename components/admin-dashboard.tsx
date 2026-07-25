@@ -19,6 +19,9 @@ import {
 } from '@/app/actions/painting'
 import { formatPrice } from '@/lib/paintings-data'
 import { BarChart3, Package, RefreshCw, CheckCircle, Clock, Trash2, Edit, Plus, Eye, EyeOff, DollarSign, TrendingUp } from 'lucide-react'
+import AddPaintingModal from './admin/AddPaintingModal'
+import EditPaintingModal from './admin/EditPaintingModal'
+import DeletePaintingDialog from './admin/DeletePaintingDialog'
 
 type Tab = 'overview' | 'orders' | 'requests' | 'paintings' | 'reviews' | 'users'
 
@@ -74,6 +77,10 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [totalRevenue, setTotalRevenue] = useState(0)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [selectedPainting, setSelectedPainting] = useState<any>(null) 
 
   useEffect(() => {
     loadData()
@@ -352,10 +359,18 @@ export default function AdminDashboard() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-foreground">Paintings Gallery</h2>
-            <button className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg transition-colors">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg transition-colors"
+            >
               <Plus size={18} />
               Add Painting
             </button>
+            <AddPaintingModal
+              open={showAddModal}
+              onClose={() => setShowAddModal(false)}
+              onSuccess={loadData}
+            />
           </div>
 
           {paintings.length === 0 ? (
@@ -371,7 +386,7 @@ export default function AdminDashboard() {
                       <h3 className="font-semibold text-foreground">{painting.title}</h3>
                       <p className="text-sm text-muted-foreground">{painting.category}</p>
                     </div>
-                    <div className={`px-2 py-1 rounded text-xs font-semibold ${painting.availability === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    <div className={`px-2 py-1 rounded text-xs font-semibold ${painting.availability === 'Available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                       {painting.availability}
                     </div>
                   </div>
@@ -379,15 +394,46 @@ export default function AdminDashboard() {
                   <p className="text-2xl font-bold text-primary mb-4">{formatPrice(painting.price)}</p>
 
                   <div className="flex gap-2">
-                    <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors">
-                      <Edit size={16} />
-                      Edit
-                    </button>
-                    <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors">
-                      <Trash2 size={16} />
-                      Delete
-                    </button>
+                    <button
+  onClick={() => {
+    setSelectedPainting(painting)
+    setShowEditModal(true)
+  }}
+  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-colors"
+>
+  <Edit size={16} />
+  Edit
+</button>
+                    <button
+  onClick={() => {
+    setSelectedPainting(painting)
+    setShowDeleteDialog(true)
+  }}
+  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors"
+>
+  <Trash2 size={16} />
+  Delete
+</button>
                   </div>
+                  <EditPaintingModal
+  open={showEditModal}
+  painting={selectedPainting}
+  onClose={() => {
+    setShowEditModal(false)
+    setSelectedPainting(null)
+  }}
+  onSuccess={loadData}
+/>
+
+<DeletePaintingDialog
+  open={showDeleteDialog}
+  painting={selectedPainting}
+  onClose={() => {
+    setShowDeleteDialog(false)
+    setSelectedPainting(null)
+  }}
+  onSuccess={loadData}
+/>
                 </div>
               ))}
             </div>
