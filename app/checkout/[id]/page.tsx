@@ -1,20 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
-import { paintings } from '@/lib/paintings-data'
+// import { paintings } from '@/lib/paintings-data'
+import { getPaintingById, createOrder } from '@/app/actions/painting'
 import { ChevronRight, Package } from 'lucide-react'
-import { createOrder } from '@/app/actions/painting'
+
 
 export default function Checkout() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
-  const painting = paintings.find((p) => p.id === id)
+  const [painting, setPainting] = useState<any>(null)
+const [loading, setLoading] = useState(true)
 
   const [step, setStep] = useState<'form' | 'summary' | 'success'>('form')
   const [formData, setFormData] = useState({
@@ -26,20 +28,84 @@ export default function Checkout() {
     state: '',
     pincode: '',
   })
+  useEffect(() => {
+  const fetchPainting = async () => {
+    try {
+      setLoading(true)
 
-  if (!painting) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Navbar />
-        <div className="text-center">
-          <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-            Painting Not Found
-          </h1>
-          <p className="text-foreground/70">The painting you&apos;re trying to purchase doesn&apos;t exist.</p>
-        </div>
-      </div>
-    )
+      const paintingData = await getPaintingById(id)
+      setPainting(paintingData)
+    } catch (error) {
+      console.error('Failed to fetch painting:', error)
+      setPainting(null)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  if (id) {
+    fetchPainting()
+  }
+}, [id])
+
+  if (loading) {
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+
+      <div className="flex flex-col items-center justify-center min-h-[80vh]">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{
+            repeat: Infinity,
+            duration: 1,
+            ease: 'linear',
+          }}
+          className="w-14 h-14 rounded-full border-4 border-primary/20 border-t-primary"
+        />
+
+        <h2 className="mt-6 text-2xl font-heading font-semibold">
+          Loading Checkout...
+        </h2>
+
+        <p className="mt-2 text-muted-foreground">
+          Preparing your artwork.
+        </p>
+      </div>
+
+      <Footer />
+    </div>
+  )
+}
+
+if (!painting) {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <Navbar />
+
+      <div className="text-center">
+        <div className="text-6xl mb-4">🎨</div>
+
+        <h1 className="text-3xl font-heading font-bold mb-2">
+          Painting Not Found
+        </h1>
+
+        <p className="text-muted-foreground mb-6">
+          The painting you're trying to purchase doesn't exist.
+        </p>
+
+        <button
+          onClick={() => router.push('/gallery')}
+          className="px-6 py-3 rounded-lg bg-primary text-primary-foreground"
+        >
+          Browse Gallery
+        </button>
+      </div>
+
+      <Footer />
+    </div>
+  )
+}
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target

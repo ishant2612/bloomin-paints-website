@@ -5,12 +5,32 @@ import Link from 'next/link'
 import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
 import PaintingCard from '@/components/painting-card'
-import { paintings } from '@/lib/paintings-data'
+// import { paintings } from '@/lib/paintings-data'
+import { getPaintings } from '@/app/actions/painting'
 import { ArrowRight, Sparkles, Heart, Palette } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 export default function Home() {
   
-  const featuredPaintings = paintings.slice(0, 6)
+  const [featuredPaintings, setFeaturedPaintings] = useState<any[]>([])
+const [loading, setLoading] = useState(true)
+useEffect(() => {
+  const loadPaintings = async () => {
+    try {
+      setLoading(true)
+
+      const data = await getPaintings()
+
+      setFeaturedPaintings(data.slice(0, 6))
+    } catch (error) {
+      console.error('Failed to load paintings:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  loadPaintings()
+}, [])
   const testimonials = [
     {
       id: 1,

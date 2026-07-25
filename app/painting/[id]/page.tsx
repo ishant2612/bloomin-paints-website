@@ -1,51 +1,119 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import Navbar from '@/components/navbar'
 import Footer from '@/components/footer'
-import { paintings } from '@/lib/paintings-data'
+// import { paintings } from '@/lib/paintings-data'
+import { getPaintingById, getPaintings } from "../.././actions/painting"
 import { ChevronLeft, ChevronRight, ZoomIn, Heart, Share2 } from 'lucide-react'
 
 export default function PaintingDetails() {
   const params = useParams()
   const id = params.id as string
-  const painting = paintings.find((p) => p.id === id)
+  const [painting, setPainting] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [allPaintings, setAllPaintings] = useState<any[]>([])
 
   const [isLiked, setIsLiked] = useState(false)
   const [imageZoom, setImageZoom] = useState(1)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  if (!painting) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Navbar />
-        <div className="text-center">
-          <div className="text-6xl mb-4">🎨</div>
-          <h1 className="text-3xl font-heading font-bold text-foreground mb-2">
-            Painting Not Found
-          </h1>
-          <p className="text-foreground/70 mb-6">
-            The painting you&apos;re looking for doesn&apos;t exist.
-          </p>
-          <Link href="/gallery">
-            <motion.button
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-accent transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Back to Gallery
-            </motion.button>
-          </Link>
-        </div>
-      </div>
-    )
+  useEffect(() => {
+  const fetchPainting = async () => {
+    try {
+      setLoading(true)
+
+      const paintingData = await getPaintingById(id)
+      const allPaintingsData = await getPaintings()
+
+      setPainting(paintingData)
+      setAllPaintings(allPaintingsData)
+    } catch (error) {
+      console.error("Failed to fetch painting:", error)
+      setPainting(null)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const relatedPaintings = paintings
+  if (id) {
+    fetchPainting()
+  }
+}, [id])
+
+
+  if (loading) {
+  return (
+    <div className="min-h-screen bg-background">
+      <Navbar />
+
+      <div className="flex flex-col items-center justify-center min-h-[80vh]">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{
+            repeat: Infinity,
+            duration: 1,
+            ease: "linear",
+          }}
+          className="w-14 h-14 border-4 border-primary/20 border-t-primary rounded-full"
+        />
+
+        <motion.h2
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="mt-6 text-2xl font-heading font-semibold"
+        >
+          Loading Painting...
+        </motion.h2>
+
+        <p className="text-muted-foreground mt-2">
+          Preparing this masterpiece for you.
+        </p>
+      </div>
+
+      <Footer />
+    </div>
+  )
+}
+
+  if (!painting) {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <Navbar />
+
+      <div className="text-center">
+        <div className="text-6xl mb-4">🎨</div>
+
+        <h1 className="text-3xl font-heading font-bold mb-2">
+          Painting Not Found
+        </h1>
+
+        <p className="text-muted-foreground mb-6">
+          The painting you're looking for doesn't exist.
+        </p>
+
+        <Link href="/gallery">
+          <motion.button
+            className="px-6 py-3 bg-primary text-primary-foreground rounded-lg"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Back to Gallery
+          </motion.button>
+        </Link>
+      </div>
+
+      <Footer />
+    </div>
+  )
+}
+
+  const relatedPaintings = allPaintings
     .filter((p) => p.category === painting.category && p.id !== painting.id)
     .slice(0, 3)
 

@@ -90,16 +90,18 @@ export default function EditPaintingModal({
         imageUrl = url
       }
 
-      await updatePainting(painting.id, {
-        title: form.title,
-        description: form.description,
-        story: form.story,
-        image: imageUrl,
-        price: Number(form.price),
-        category: form.category,
-        medium: form.medium,
-        dimensions: form.dimensions,
-      })
+      if (painting) {
+        await updatePainting(painting.id, {
+          title: form.title,
+          description: form.description,
+          story: form.story,
+          image: imageUrl,
+          price: Number(form.price),
+          category: form.category,
+          medium: form.medium,
+          dimensions: form.dimensions,
+        })
+      }
 
       onSuccess()
       onClose()
