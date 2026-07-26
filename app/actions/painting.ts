@@ -1,367 +1,3 @@
-// 'use server'
-
-// import { auth } from '@/lib/auth'
-// import { db } from '@/lib/db'
-// import { painting, customRequest, order, review, user } from '@/lib/db/schema'
-// import { eq, and, desc } from 'drizzle-orm'
-// import { headers } from 'next/headers'
-// import { revalidatePath } from 'next/cache'
-// import crypto from 'crypto'
-// import { sendOrderConfirmationEmail } from '@/lib/email'
-
-// const uuidv4 = () => crypto.randomUUID()
-
-// async function getUserId() {
-//   const session = await auth.api.getSession({ headers: await headers() })
-//   if (!session?.user) throw new Error('Unauthorized')
-//   return session.user.id
-// }
-
-// async function getUserRole() {
-//   const session = await auth.api.getSession({ headers: await headers() })
-//   if (!session?.user) throw new Error('Unauthorized')
-//   return (session.user as any)?.role || 'buyer'
-// }
-
-// // Paintings
-// export async function getPaintings() {
-//   return db.select().from(painting).orderBy(desc(painting.createdAt))
-// }
-
-// export async function getPaintingById(id: string) {
-//   const result = await db.select().from(painting).where(eq(painting.id, id))
-//   return result[0]
-// }
-
-// export async function addPainting(data: {
-//   title: string
-//   description: string
-//   story: string
-//   image: string
-//   price: number
-//   category: string
-//   medium: string
-//   dimensions: string
-// }) {
-//   const role = await getUserRole()
-//   if (role !== 'admin') throw new Error('Only admins can add paintings')
-
-//   const id = uuidv4()
-//   await db.insert(painting).values({
-//     id,
-//     ...data,
-//     availability: 'Available',
-//   })
-//   revalidatePath('/gallery')
-//   return id
-// }
-
-// export async function updatePainting(
-//   id: string,
-//   data: Partial<{
-//     title: string
-//     description: string
-//     story: string
-//     image: string
-//     price: number
-//     category: string
-//     medium: string
-//     dimensions: string
-//     availability: string
-//   }>
-// ) {
-//   const role = await getUserRole()
-//   if (role !== 'admin') throw new Error('Only admins can update paintings')
-
-//   await db.update(painting).set(data).where(eq(painting.id, id))
-//   revalidatePath('/gallery')
-//   revalidatePath(`/painting/${id}`)
-// }
-
-// export async function deletePainting(id: string) {
-//   const role = await getUserRole()
-//   if (role !== 'admin') throw new Error('Only admins can delete paintings')
-
-//   await db.delete(painting).where(eq(painting.id, id))
-//   revalidatePath('/gallery')
-// }
-
-// // Custom Requests
-// export async function createCustomRequest(data: {
-//   title: string
-//   description: string
-//   imageUrl: string
-//   specifications: string
-//   basePrice: number
-// }) {
-//   const userId = await getUserId()
-//   const id = uuidv4()
-//   const finalPrice = Math.round(data.basePrice * 1.3)
-
-//   await db.insert(customRequest).values({
-//     id,
-//     userId,
-//     ...data,
-//     finalPrice,
-//     status: 'pending',
-//   })
-//   revalidatePath('/account')
-//   return id
-// }
-
-// export async function getUserCustomRequests() {
-//   const userId = await getUserId()
-//   return db
-//     .select()
-//     .from(customRequest)
-//     .where(eq(customRequest.userId, userId))
-//     .orderBy(desc(customRequest.createdAt))
-// }
-
-// export async function getAllCustomRequests() {
-//   const role = await getUserRole()
-//   if (role !== 'admin') throw new Error('Only admins can view all custom requests')
-
-//   return db.select().from(customRequest).orderBy(desc(customRequest.createdAt))
-// }
-
-// export async function updateCustomRequestStatus(
-//   id: string,
-//   status: string,
-//   artistNotes?: string
-// ) {
-//   const role = await getUserRole()
-//   if (role !== 'admin') throw new Error('Only admins can update custom requests')
-
-//   await db
-//     .update(customRequest)
-//     .set({ status, artistNotes })
-//     .where(eq(customRequest.id, id))
-
-//   revalidatePath('/account')
-// }
-
-// // Orders
-// export async function createOrderDb(data: {
-//   paintingId?: string
-//   customRequestId?: string
-//   fullName: string
-//   email: string
-//   phone: string
-//   address: string
-//   city: string
-//   state: string
-//   pincode: string
-//   totalPrice: number
-// }) {
-//   const userId = await getUserId()
-//   const id = uuidv4()
-
-//   await db.insert(order).values({
-//     id,
-//     userId,
-//     ...data,
-//     status: 'pending',
-//   })
-//   revalidatePath('/account')
-//   return id
-// }
-
-// export async function getUserOrders() {
-//   const userId = await getUserId()
-//   return db
-//     .select()
-//     .from(order)
-//     .where(eq(order.userId, userId))
-//     .orderBy(desc(order.createdAt))
-// }
-
-// export async function getAllOrders() {
-//   const role = await getUserRole()
-//   if (role !== 'admin') throw new Error('Only admins can view all orders')
-
-//   return db.select().from(order).orderBy(desc(order.createdAt))
-// }
-
-// export async function updateOrderStatus(id: string, status: string) {
-//   const role = await getUserRole()
-//   if (role !== 'admin') throw new Error('Only admins can update order status')
-
-//   await db.update(order).set({ status }).where(eq(order.id, id))
-//   revalidatePath('/account')
-// }
-
-// export async function cancelOrder(id: string) {
-//   const userId = await getUserId()
-//   const orderData = await db.select().from(order).where(eq(order.id, id))
-
-//   if (!orderData[0] || orderData[0].userId !== userId) {
-//     throw new Error('Unauthorized')
-//   }
-
-//   await db.update(order).set({ status: 'cancelled' }).where(eq(order.id, id))
-//   revalidatePath('/account')
-// }
-
-// // Reviews
-// export async function addReview(data: {
-//   orderId: string
-//   paintingId?: string
-//   rating: number
-//   comment?: string
-// }) {
-//   const userId = await getUserId()
-//   const id = uuidv4()
-
-//   await db.insert(review).values({
-//     id,
-//     userId,
-//     ...data,
-//   })
-//   revalidatePath('/account')
-//   return id
-// }
-
-// export async function getOrderReview(orderId: string) {
-//   const result = await db.select().from(review).where(eq(review.orderId, orderId))
-//   return result[0]
-// }
-
-// export async function getPaintingReviews(paintingId: string) {
-//   return db.select().from(review).where(eq(review.paintingId, paintingId))
-// }
-
-// export async function getReviewsForApproval() {
-//   const role = await getUserRole()
-//   if (role !== 'admin') throw new Error('Only admins can view reviews')
-
-//   return db.select().from(review).orderBy(desc(review.createdAt))
-// }
-
-// export async function approveReview(reviewId: string) {
-//   const role = await getUserRole()
-//   if (role !== 'admin') throw new Error('Only admins can approve reviews')
-
-//   await db.update(review).set({ status: 'approved' }).where(eq(review.id, reviewId))
-//   revalidatePath('/')
-// }
-
-// export async function rejectReview(reviewId: string) {
-//   const role = await getUserRole()
-//   if (role !== 'admin') throw new Error('Only admins can reject reviews')
-
-//   await db.delete(review).where(eq(review.id, reviewId))
-//   revalidatePath('/')
-// }
-// console.log("=== createOrder START ===");
-// export async function createOrder(data: {
-//   paintingId?: string
-//   fullName: string
-//   email: string
-//   phone: string
-//   address: string
-//   city: string
-//   state: string
-//   pincode: string
-//   totalPrice: number
-// }) {
-//   console.log('[v0] createOrder called with data:', data)
-//   try {
-//     const session = await auth.api.getSession({ headers: await headers() })
-//     if (!session?.user) {
-//       console.error('[v0] No session found')
-//       throw new Error('Unauthorized')
-//     }
-
-//     const userId = session.user.id
-//     const paintingData = data.paintingId
-//   ? await db.query.painting.findFirst({
-//       where: eq(painting.id, data.paintingId),
-//     })
-//   : null
-//     const newOrderId = uuidv4()
-//     const orderId = `ORD-${newOrderId.split('-')[0].toUpperCase()}-${Date.now()}`
-    
-//     console.log('[v0] Creating order with ID:', orderId)
-//     console.log('[v0] User ID:', userId)
-    
-    
-//     console.log('[v0] Order inserted into database successfully')
-
-//     // Send email in background (don't await)
-//     console.log("STEP 1");
-
-// try {
-//   console.log("STEP 2 - Before email");
-
-//   const success = await sendOrderConfirmationEmail({
-//     orderId,
-//     customerName: data.fullName,
-//     customerEmail: data.email,
-//     paintingTitle: paintingData?.title || 'Custom Artwork',
-//     price: data.totalPrice,
-//     address: data.address,
-//     city: data.city,
-//     state: data.state,
-//     pincode: data.pincode,
-//   });
-
-//   console.log("STEP 3 - Email returned:", success);
-// } catch (err) {
-//   console.error("STEP 4 - Email error:", err);
-// }
-
-// console.log("STEP 5");
-//   } catch (error) {
-//     console.error('[v0] Error creating order:', error)
-//     throw error
-//   }
-// }
-
-// // Get current user's role
-// export async function getCurrentUserRole() {
-//   try {
-//     const session = await auth.api.getSession({ headers: await headers() })
-//     if (!session?.user) return null
-    
-//     // Fetch user from database to get the role
-//     const userId = session.user.id
-//     const userData = await db.query.user.findFirst({
-//       where: (fields) => eq(fields.id, userId),
-//     })
-    
-//     console.log('[v0] Current user role from DB:', userData?.role)
-//     return userData?.role || 'buyer'
-//   } catch (error) {
-//     console.error('[v0] Error getting user role:', error)
-//     return 'buyer'
-//   }
-// }
-
-// // User Management for Admin
-// export async function getAllUsers() {
-//   const role = await getUserRole()
-//   if (role !== 'admin') throw new Error('Only admins can view users')
-//   console.log('[v0] Fetching all users for admin')
-//   return db.select().from(user).orderBy(desc(user.createdAt))
-// }
-
-// export async function updateUserRole(userId: string, newRole: 'buyer' | 'admin') {
-//   const role = await getUserRole()
-//   if (role !== 'admin') throw new Error('Only admins can update user roles')
-
-//   if (!['buyer', 'admin'].includes(newRole)) {
-//     throw new Error('Invalid role')
-//   }
-
-//   await db.update(user).set({ role: newRole }).where(eq(user.id, userId))
-//   revalidatePath('/admin')
-//   revalidatePath('/account')
-// }
-
-
-
-
 'use server'
 
 import { auth } from '@/lib/auth'
@@ -506,6 +142,118 @@ export async function updateCustomRequestStatus(
 }
 
 // Orders
+export async function createOrderDb(data: {
+  paintingId?: string
+  customRequestId?: string
+  fullName: string
+  email: string
+  phone: string
+  address: string
+  city: string
+  state: string
+  pincode: string
+  totalPrice: number
+}) {
+  const userId = await getUserId()
+  const id = uuidv4()
+
+  await db.insert(order).values({
+    id,
+    userId,
+    ...data,
+    status: 'pending',
+  })
+  revalidatePath('/account')
+  return id
+}
+
+export async function getUserOrders() {
+  const userId = await getUserId()
+  return db
+    .select()
+    .from(order)
+    .where(eq(order.userId, userId))
+    .orderBy(desc(order.createdAt))
+}
+
+export async function getAllOrders() {
+  const role = await getUserRole()
+  if (role !== 'admin') throw new Error('Only admins can view all orders')
+
+  return db.select().from(order).orderBy(desc(order.createdAt))
+}
+
+export async function updateOrderStatus(id: string, status: string) {
+  const role = await getUserRole()
+  if (role !== 'admin') throw new Error('Only admins can update order status')
+
+  await db.update(order).set({ status }).where(eq(order.id, id))
+  revalidatePath('/account')
+}
+
+export async function cancelOrder(id: string) {
+  const userId = await getUserId()
+  const orderData = await db.select().from(order).where(eq(order.id, id))
+
+  if (!orderData[0] || orderData[0].userId !== userId) {
+    throw new Error('Unauthorized')
+  }
+
+  await db.update(order).set({ status: 'cancelled' }).where(eq(order.id, id))
+  revalidatePath('/account')
+}
+
+// Reviews
+export async function addReview(data: {
+  orderId: string
+  paintingId?: string
+  rating: number
+  comment?: string
+}) {
+  const userId = await getUserId()
+  const id = uuidv4()
+
+  await db.insert(review).values({
+    id,
+    userId,
+    ...data,
+  })
+  revalidatePath('/account')
+  return id
+}
+
+export async function getOrderReview(orderId: string) {
+  const result = await db.select().from(review).where(eq(review.orderId, orderId))
+  return result[0]
+}
+
+export async function getPaintingReviews(paintingId: string) {
+  return db.select().from(review).where(eq(review.paintingId, paintingId))
+}
+
+export async function getReviewsForApproval() {
+  const role = await getUserRole()
+  if (role !== 'admin') throw new Error('Only admins can view reviews')
+
+  return db.select().from(review).orderBy(desc(review.createdAt))
+}
+
+export async function approveReview(reviewId: string) {
+  const role = await getUserRole()
+  if (role !== 'admin') throw new Error('Only admins can approve reviews')
+
+  await db.update(review).set({ status: 'approved' }).where(eq(review.id, reviewId))
+  revalidatePath('/')
+}
+
+export async function rejectReview(reviewId: string) {
+  const role = await getUserRole()
+  if (role !== 'admin') throw new Error('Only admins can reject reviews')
+
+  await db.delete(review).where(eq(review.id, reviewId))
+  revalidatePath('/')
+}
+console.log("=== createOrder START ===");
 export async function createOrder(data: {
   paintingId?: string
   fullName: string
@@ -517,46 +265,56 @@ export async function createOrder(data: {
   pincode: string
   totalPrice: number
 }) {
-  const userId = await getUserId()
-
-  const paintingData = data.paintingId
-    ? await db.query.painting.findFirst({
-        where: eq(painting.id, data.paintingId),
-      })
-    : null
-
-  const dbId = uuidv4()
-  const orderId = `ORD-${dbId.split('-')[0].toUpperCase()}-${Date.now()}`
-
-  await db.insert(order).values({
-    id: dbId,
-    userId,
-    ...data,
-    status: 'pending',
-  })
-
-  revalidatePath('/account')
-
+  console.log('[v0] createOrder called with data:', data)
   try {
-    await sendOrderConfirmationEmail({
-      orderId,
-      customerName: data.fullName,
-      customerEmail: data.email,
-      paintingTitle: paintingData?.title || 'Custom Artwork',
-      price: data.totalPrice,
-      address: data.address,
-      city: data.city,
-      state: data.state,
-      pincode: data.pincode,
-    })
-  } catch (error) {
-    console.error('Failed to send order confirmation email:', error)
-  }
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session?.user) {
+      console.error('[v0] No session found')
+      throw new Error('Unauthorized')
+    }
 
-  return {
-    success: true,
-    id: dbId,
+    const userId = session.user.id
+    const paintingData = data.paintingId
+  ? await db.query.painting.findFirst({
+      where: eq(painting.id, data.paintingId),
+    })
+  : null
+    const newOrderId = uuidv4()
+    const orderId = `ORD-${newOrderId.split('-')[0].toUpperCase()}-${Date.now()}`
+    
+    console.log('[v0] Creating order with ID:', orderId)
+    console.log('[v0] User ID:', userId)
+    
+    
+    console.log('[v0] Order inserted into database successfully')
+
+    // Send email in background (don't await)
+    console.log("STEP 1");
+
+try {
+  console.log("STEP 2 - Before email");
+
+  const success = await sendOrderConfirmationEmail({
     orderId,
+    customerName: data.fullName,
+    customerEmail: data.email,
+    paintingTitle: paintingData?.title || 'Custom Artwork',
+    price: data.totalPrice,
+    address: data.address,
+    city: data.city,
+    state: data.state,
+    pincode: data.pincode,
+  });
+
+  console.log("STEP 3 - Email returned:", success);
+} catch (err) {
+  console.error("STEP 4 - Email error:", err);
+}
+
+console.log("STEP 5");
+  } catch (error) {
+    console.error('[v0] Error creating order:', error)
+    throw error
   }
 }
 
@@ -600,3 +358,6 @@ export async function updateUserRole(userId: string, newRole: 'buyer' | 'admin')
   revalidatePath('/admin')
   revalidatePath('/account')
 }
+
+
+
