@@ -9,7 +9,7 @@ import PaintingCard from '@/components/painting-card'
 import { getPaintings } from '@/app/actions/painting'
 import { ArrowRight, Sparkles, Heart, Palette } from 'lucide-react'
 import { useEffect, useState } from 'react'
-
+import landingpage from '@/public/landingpage.jpeg'
 export default function Home() {
   
   const [featuredPaintings, setFeaturedPaintings] = useState<any[]>([])
@@ -174,7 +174,7 @@ useEffect(() => {
                 className="absolute inset-0 bg-cover bg-center"
                 style={{
                   backgroundImage:
-                    'url(https://images.unsplash.com/photo-1579783902614-e3fb5141b0cb?w=600&h=600&fit=crop)',
+                    `url(${landingpage.src})`,
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent" />
