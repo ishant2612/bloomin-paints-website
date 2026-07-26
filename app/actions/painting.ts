@@ -7,6 +7,7 @@ import { eq, and, desc } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import crypto from 'crypto'
+import { sendOrderConfirmationEmail } from '@/lib/email'
 
 const uuidv4 = () => crypto.randomUUID()
 
@@ -252,7 +253,7 @@ export async function rejectReview(reviewId: string) {
   await db.delete(review).where(eq(review.id, reviewId))
   revalidatePath('/')
 }
-
+console.log("=== createOrder START ===");
 export async function createOrder(data: {
   paintingId?: string
   fullName: string
@@ -264,6 +265,7 @@ export async function createOrder(data: {
   pincode: string
   totalPrice: number
 }) {
+  console.log('[v0] createOrder called with data:', data)
   try {
     const session = await auth.api.getSession({ headers: await headers() })
     if (!session?.user) {
@@ -272,55 +274,47 @@ export async function createOrder(data: {
     }
 
     const userId = session.user.id
+    const paintingData = data.paintingId
+  ? await db.query.painting.findFirst({
+      where: eq(painting.id, data.paintingId),
+    })
+  : null
     const newOrderId = uuidv4()
     const orderId = `ORD-${newOrderId.split('-')[0].toUpperCase()}-${Date.now()}`
     
     console.log('[v0] Creating order with ID:', orderId)
     console.log('[v0] User ID:', userId)
     
-    // Insert order into database
-    const result = await db.insert(order).values({
-      id: newOrderId,
-      userId,
-      paintingId: data.paintingId || null,
-      fullName: data.fullName,
-      email: data.email,
-      phone: data.phone,
-      address: data.address,
-      city: data.city,
-      state: data.state,
-      pincode: data.pincode,
-      totalPrice: data.totalPrice,
-      status: 'pending',
-    })
-
+    
     console.log('[v0] Order inserted into database successfully')
 
     // Send email in background (don't await)
-    try {
-      const { sendOrderConfirmationEmail } = await import('@/lib/email')
-      sendOrderConfirmationEmail({
-        orderId,
-        customerName: data.fullName,
-        customerEmail: data.email,
-        paintingTitle: data.paintingId ? 'Your Artwork' : 'Custom Artwork',
-        price: data.totalPrice,
-        address: data.address,
-        city: data.city,
-        state: data.state,
-        pincode: data.pincode,
-      }).catch((err) => {
-        console.error('[v0] Email sending error:', err)
-      })
-    } catch (emailError) {
-      console.error('[v0] Failed to import email module:', emailError)
-    }
+    console.log("STEP 1");
 
-    revalidatePath('/account')
-    return { orderId, internalId: newOrderId, success: true }
-  } catch (error: any) {
-    console.error('[v0] Order creation error:', error)
-    throw new Error(error?.message || 'Failed to create order')
+try {
+  console.log("STEP 2 - Before email");
+
+  const success = await sendOrderConfirmationEmail({
+    orderId,
+    customerName: data.fullName,
+    customerEmail: data.email,
+    paintingTitle: paintingData?.title || 'Custom Artwork',
+    price: data.totalPrice,
+    address: data.address,
+    city: data.city,
+    state: data.state,
+    pincode: data.pincode,
+  });
+
+  console.log("STEP 3 - Email returned:", success);
+} catch (err) {
+  console.error("STEP 4 - Email error:", err);
+}
+
+console.log("STEP 5");
+  } catch (error) {
+    console.error('[v0] Error creating order:', error)
+    throw error
   }
 }
 
@@ -364,3 +358,6 @@ export async function updateUserRole(userId: string, newRole: 'buyer' | 'admin')
   revalidatePath('/admin')
   revalidatePath('/account')
 }
+
+
+
