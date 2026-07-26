@@ -310,7 +310,7 @@ export default function PaintingDetails() {
             <div className="p-4 bg-secondary rounded-xl border border-border">
               <p className="text-xs text-foreground/60 mb-1">Dimensions</p>
               <p className="font-semibold text-foreground">
-                {painting.dimensions.width}&quot; × {painting.dimensions.height}&quot;
+                {painting.dimensions.width}&quot; x {painting.dimensions.height}&quot;
               </p>
             </div>
             <div className="p-4 bg-secondary rounded-xl border border-border">
@@ -338,6 +338,7 @@ export default function PaintingDetails() {
                 disabled={painting.availability === 'Sold'}
               >
                 {painting.availability === 'Sold' ? 'Sold Out' : 'Buy Now'}
+                
               </motion.button>
             </Link>
 
